@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from pathlib import Path
+from .patterns import select_reference
 
 EXTENSIONS_BASE_PATH = "/home/chatwoot/saaskaran/backend/extensions"
 
@@ -899,6 +900,7 @@ def build_system_prompt(
     template: str,
     active_extensions: list[str],
     selected_extension: str | None = None,
+    user_message: str = "",
 ) -> str:
     context = f"Project template: **{template}**."
     if active_extensions:
@@ -950,11 +952,14 @@ def build_system_prompt(
 """
 
     # ── CREATE MODE ──────────────────────────────────────────────────────────
-    codebase_context = _load_actual_codebase()
+    codebase_context  = _load_actual_codebase()
+    matched_reference = select_reference(user_message)
     return f"""{AGENTIC_PREAMBLE}You are a senior full-stack engineer building a complete, production-ready SaaS extension.
 {context}
 
 {codebase_context}
+
+{matched_reference}
 
 ## REQUIRED FILES — output ALL of these, in order
 

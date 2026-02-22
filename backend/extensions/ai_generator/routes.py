@@ -109,7 +109,9 @@ async def ws_generate(websocket: WebSocket):
             active_extensions  = data.get("active_extensions", [])
             selected_extension = data.get("selected_extension") or None
             session_id         = data.get("session_id") or str(__import__("uuid").uuid4())
-            system_prompt      = build_system_prompt(template, active_extensions, selected_extension)
+            # Extract first user message for pattern matching (picks the right reference example)
+            first_user_msg     = next((m.get("content", "") for m in messages if m.get("role") == "user"), "")
+            system_prompt      = build_system_prompt(template, active_extensions, selected_extension, first_user_msg)
 
             if _has_api_key():
                 gen_task = asyncio.create_task(
