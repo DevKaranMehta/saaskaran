@@ -1,0 +1,39 @@
+{
+  "name": "customer_portal",
+  "label": "Customer Portal",
+  "icon": "🎫",
+  "api_base": "/customer-portal",
+  "description": "Support ticket management with priorities, categories and replies.",
+  "resources": [
+    {
+      "key": "tickets",
+      "label": "Tickets",
+      "list":   "GET /tickets",
+      "create": "POST /tickets",
+      "update": "PATCH /tickets/{id}",
+      "delete": "DELETE /tickets/{id}",
+      "empty_message": "No tickets yet — create your first support ticket",
+      "fields": [
+        { "key": "title",          "label": "Title",          "type": "text",     "required": true,  "show_in_list": true },
+        { "key": "customer_name",  "label": "Customer Name",  "type": "text",     "required": true,  "show_in_list": true },
+        { "key": "customer_email", "label": "Customer Email", "type": "email",    "required": true,  "show_in_list": true },
+        { "key": "description",    "label": "Description",    "type": "textarea", "required": true,  "show_in_list": false },
+        {
+          "key": "status", "label": "Status", "type": "select", "show_in_list": true,
+          "options": ["open", "in_progress", "resolved", "closed"]
+        },
+        {
+          "key": "priority", "label": "Priority", "type": "select", "required": true, "show_in_list": true,
+          "options": ["low", "medium", "high", "urgent"]
+        },
+        {
+          "key": "category", "label": "Category", "type": "select", "required": true, "show_in_list": true,
+          "options": ["billing", "technical", "general", "feature_request"]
+        },
+        { "key": "assigned_to",  "label": "Assigned To",  "type": "text", "show_in_list": true },
+        { "key": "reply_count",  "label": "Replies",      "type": "number", "show_in_list": true },
+        { "key": "created_at",   "label": "Created",      "type": "date",   "show_in_list": true }
+      ]
+    }
+  ]
+}

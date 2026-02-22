@@ -1,0 +1,44 @@
+{
+  "label": "Form Builder",
+  "icon": "📋",
+  "color": "#4f46e5",
+  "description": "Build embeddable forms, generate embed code, and track submissions.",
+  "api_base": "/form-builder",
+  "resources": [
+    {
+      "key": "forms",
+      "label": "Forms",
+      "list":   "GET /forms/",
+      "create": "POST /forms/",
+      "update": "PATCH /forms/{id}",
+      "delete": "DELETE /forms/{id}",
+      "id_field": "id",
+      "empty_message": "No forms yet. Create your first embeddable form!",
+      "fields": [
+        { "key": "name",               "label": "Form Name",          "type": "text",     "required": true,  "show_in_list": true  },
+        { "key": "description",        "label": "Description",        "type": "textarea", "required": false, "show_in_list": false },
+        { "key": "submit_button_text", "label": "Submit Button Text", "type": "text",     "required": false, "show_in_list": false },
+        { "key": "success_message",    "label": "Success Message",    "type": "textarea", "required": false, "show_in_list": false },
+        { "key": "is_active",          "label": "Active",             "type": "boolean",  "required": false, "show_in_list": true  },
+        { "key": "submission_count",   "label": "Submissions",        "type": "number",   "required": false, "show_in_list": true  },
+        { "key": "embed_token",        "label": "Embed Token",        "type": "text",     "required": false, "show_in_list": false },
+        { "key": "created_at",         "label": "Created",            "type": "date",     "required": false, "show_in_list": true  }
+      ]
+    },
+    {
+      "key": "submissions",
+      "label": "Submissions",
+      "list":   "GET /submissions/",
+      "delete": "DELETE /forms/{id}/submissions/{id}",
+      "id_field": "id",
+      "empty_message": "No submissions yet.",
+      "fields": [
+        { "key": "form_id",    "label": "Form ID",        "type": "text",     "required": false, "show_in_list": true  },
+        { "key": "data",       "label": "Submission Data","type": "textarea", "required": false, "show_in_list": false },
+        { "key": "ip_address", "label": "IP Address",     "type": "text",     "required": false, "show_in_list": true  },
+        { "key": "user_agent", "label": "User Agent",     "type": "text",     "required": false, "show_in_list": false },
+        { "key": "created_at", "label": "Submitted At",   "type": "date",     "required": false, "show_in_list": true  }
+      ]
+    }
+  ]
+}

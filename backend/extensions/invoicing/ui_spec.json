@@ -1,0 +1,149 @@
+{
+  "label": "Invoicing",
+  "icon": "💰",
+  "color": "#10b981",
+  "description": "Manage clients, invoices, and track payments.",
+  "api_base": "/invoicing",
+  "resources": [
+    {
+      "key": "invoices",
+      "label": "Invoices",
+      "list":   "GET /invoices/",
+      "create": "POST /invoices/",
+      "update": "PATCH /invoices/{id}",
+      "delete": "DELETE /invoices/{id}",
+      "id_field": "id",
+      "empty_message": "No invoices yet. Create your first invoice!",
+      "fields": [
+        {
+          "key": "invoice_number",
+          "label": "Invoice #",
+          "type": "text",
+          "required": false,
+          "show_in_list": true,
+          "placeholder": "Auto-generated if left blank"
+        },
+        {
+          "key": "client_name",
+          "label": "Client",
+          "type": "text",
+          "required": false,
+          "show_in_list": true
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "select",
+          "required": false,
+          "show_in_list": true,
+          "options": ["draft", "sent", "paid", "overdue", "cancelled"]
+        },
+        {
+          "key": "due_date",
+          "label": "Due Date",
+          "type": "date",
+          "required": false,
+          "show_in_list": true
+        },
+        {
+          "key": "total",
+          "label": "Total",
+          "type": "number",
+          "required": false,
+          "show_in_list": true
+        },
+        {
+          "key": "currency",
+          "label": "Currency",
+          "type": "text",
+          "required": false,
+          "show_in_list": false,
+          "placeholder": "USD"
+        },
+        {
+          "key": "tax_rate",
+          "label": "Tax Rate (%)",
+          "type": "number",
+          "required": false,
+          "show_in_list": false
+        },
+        {
+          "key": "issue_date",
+          "label": "Issue Date",
+          "type": "date",
+          "required": false,
+          "show_in_list": false
+        },
+        {
+          "key": "notes",
+          "label": "Notes",
+          "type": "textarea",
+          "required": false,
+          "show_in_list": false
+        },
+        {
+          "key": "line_items",
+          "label": "Line Items (JSON)",
+          "type": "json",
+          "required": false,
+          "show_in_list": false,
+          "placeholder": "[{\"description\": \"Service\", \"quantity\": 1, \"unit_price\": 100.00}]"
+        }
+      ]
+    },
+    {
+      "key": "clients",
+      "label": "Clients",
+      "list":   "GET /clients/",
+      "create": "POST /clients/",
+      "update": "PATCH /clients/{id}",
+      "delete": "DELETE /clients/{id}",
+      "id_field": "id",
+      "empty_message": "No clients yet. Add your first client!",
+      "fields": [
+        {
+          "key": "name",
+          "label": "Client Name",
+          "type": "text",
+          "required": true,
+          "show_in_list": true
+        },
+        {
+          "key": "email",
+          "label": "Email",
+          "type": "email",
+          "required": false,
+          "show_in_list": true
+        },
+        {
+          "key": "phone",
+          "label": "Phone",
+          "type": "text",
+          "required": false,
+          "show_in_list": true
+        },
+        {
+          "key": "billing_address",
+          "label": "Billing Address",
+          "type": "textarea",
+          "required": false,
+          "show_in_list": false
+        },
+        {
+          "key": "tax_id",
+          "label": "Tax ID / VAT",
+          "type": "text",
+          "required": false,
+          "show_in_list": false
+        },
+        {
+          "key": "notes",
+          "label": "Notes",
+          "type": "textarea",
+          "required": false,
+          "show_in_list": false
+        }
+      ]
+    }
+  ]
+}

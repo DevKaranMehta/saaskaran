@@ -1,0 +1,63 @@
+{
+  "label": "Blog CMS",
+  "icon": "✍️",
+  "color": "#10b981",
+  "description": "Full blog CMS with categories and posts.",
+  "api_base": "/blog-cms",
+  "resources": [
+    {
+      "key": "categories",
+      "label": "Categories",
+      "list":   "GET /categories/",
+      "create": "POST /categories/",
+      "update": "PATCH /categories/{id}",
+      "delete": "DELETE /categories/{id}",
+      "id_field": "id",
+      "empty_message": "No categories yet. Add your first category!",
+      "fields": [
+        { "key": "name",        "label": "Name",        "type": "text",     "required": true,  "show_in_list": true  },
+        { "key": "slug",        "label": "Slug",        "type": "text",     "required": false, "show_in_list": true  },
+        { "key": "description", "label": "Description", "type": "textarea", "required": false, "show_in_list": false },
+        { "key": "created_at",  "label": "Created",     "type": "date",     "required": false, "show_in_list": true  }
+      ]
+    },
+    {
+      "key": "posts",
+      "label": "Posts",
+      "list":   "GET /",
+      "create": "POST /",
+      "update": "PATCH /{id}",
+      "delete": "DELETE /{id}",
+      "id_field": "id",
+      "empty_message": "No posts yet. Write your first post!",
+      "fields": [
+        { "key": "title",              "label": "Title",         "type": "text",     "required": true,  "show_in_list": true  },
+        { "key": "slug",               "label": "Slug",          "type": "text",     "required": false, "show_in_list": false },
+        {
+          "key": "category_id",
+          "label": "Category",
+          "type": "relation",
+          "required": false,
+          "show_in_list": true,
+          "relation_resource": "categories",
+          "relation_label_field": "name",
+          "relation_value_field": "id"
+        },
+        {
+          "key": "status",
+          "label": "Status",
+          "type": "select",
+          "required": false,
+          "show_in_list": true,
+          "options": ["draft", "published", "archived"]
+        },
+        { "key": "excerpt",            "label": "Excerpt",       "type": "textarea", "required": false, "show_in_list": false },
+        { "key": "content",            "label": "Content",       "type": "textarea", "required": false, "show_in_list": false },
+        { "key": "featured_image_url", "label": "Featured Image","type": "text",     "required": false, "show_in_list": false },
+        { "key": "tags",               "label": "Tags",          "type": "tags",     "required": false, "show_in_list": true  },
+        { "key": "published_at",       "label": "Publish Date",  "type": "date",     "required": false, "show_in_list": false },
+        { "key": "created_at",         "label": "Created",       "type": "date",     "required": false, "show_in_list": true  }
+      ]
+    }
+  ]
+}

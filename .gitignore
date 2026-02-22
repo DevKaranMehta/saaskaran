@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+*.egg-info/
+
+# Next.js
+frontend/.next/
+frontend/node_modules/
+frontend/.env.local
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Runtime state
+ai_sessions/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store

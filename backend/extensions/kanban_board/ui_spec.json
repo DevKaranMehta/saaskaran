@@ -1,0 +1,23 @@
+{
+  "label": "Kanban Board",
+  "icon": "⬡",
+  "color": "#6366f1",
+  "description": "Trello-style boards with cards, priorities and drag-and-drop",
+  "api_base": "/kanban-board",
+  "resources": [
+    {
+      "key": "boards",
+      "label": "Boards",
+      "list":   "GET /boards",
+      "create": "POST /boards",
+      "update": "PATCH /boards/{id}",
+      "delete": "DELETE /boards/{id}",
+      "id_field": "id",
+      "empty_message": "No boards yet. Create your first kanban board!",
+      "fields": [
+        { "key": "name",        "label": "Board Name",   "type": "text",     "required": true,  "show_in_list": true },
+        { "key": "description", "label": "Description",  "type": "textarea", "required": false, "show_in_list": true }
+      ]
+    }
+  ]
+}

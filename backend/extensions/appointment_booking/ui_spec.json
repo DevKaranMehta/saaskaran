@@ -1,0 +1,47 @@
+{
+  "label": "Appointments",
+  "icon": "📅",
+  "color": "#0ea5e9",
+  "description": "Manage bookable services and client appointments.",
+  "api_base": "/appointment-booking",
+  "resources": [
+    {
+      "key": "services",
+      "label": "Services",
+      "list":   "GET /services",
+      "create": "POST /services",
+      "update": "PATCH /services/{id}",
+      "delete": "DELETE /services/{id}",
+      "id_field": "id",
+      "empty_message": "No services yet. Add your first bookable service!",
+      "fields": [
+        { "key": "name",             "label": "Service Name",      "type": "text",    "required": true,  "show_in_list": true  },
+        { "key": "description",      "label": "Description",       "type": "textarea","required": false, "show_in_list": false },
+        { "key": "duration_minutes", "label": "Duration (minutes)","type": "number",  "required": true,  "show_in_list": true  },
+        { "key": "price",            "label": "Price",             "type": "number",  "required": false, "show_in_list": true  },
+        { "key": "is_active",        "label": "Active",            "type": "boolean", "required": false, "show_in_list": true  },
+        { "key": "created_at",       "label": "Created",           "type": "date",    "required": false, "show_in_list": false }
+      ]
+    },
+    {
+      "key": "appointments",
+      "label": "Appointments",
+      "list":   "GET /appointments",
+      "create": "POST /appointments",
+      "update": "PATCH /appointments/{id}",
+      "delete": "DELETE /appointments/{id}",
+      "id_field": "id",
+      "empty_message": "No appointments yet. Book your first appointment!",
+      "fields": [
+        { "key": "client_name",  "label": "Client Name",  "type": "text",     "required": true,  "show_in_list": true  },
+        { "key": "client_email", "label": "Client Email", "type": "email",    "required": true,  "show_in_list": true  },
+        { "key": "service_id",   "label": "Service ID",   "type": "text",     "required": true,  "show_in_list": false },
+        { "key": "start_time",   "label": "Start Time",   "type": "date",     "required": true,  "show_in_list": true  },
+        { "key": "end_time",     "label": "End Time",     "type": "date",     "required": true,  "show_in_list": false },
+        { "key": "status",       "label": "Status",       "type": "select",   "required": false, "show_in_list": true,
+          "options": ["pending", "confirmed", "completed", "cancelled"] },
+        { "key": "notes",        "label": "Notes",        "type": "textarea", "required": false, "show_in_list": false }
+      ]
+    }
+  ]
+}
