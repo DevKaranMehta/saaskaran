@@ -1,21 +1,21 @@
-"""Form Builder Extension."""
+"""Notifications Extension — in-app notifications."""
 from __future__ import annotations
 from saas_builder.core import ExtensionBase
 
 
-class FormBuilderExtension(ExtensionBase):
-    name        = "form_builder"
+class NotificationsExtension(ExtensionBase):
+    name        = "notifications"
     version     = "1.0.0"
-    description = "Build embeddable forms, generate embed code, and track submissions."
+    description = "In-app notification system: send, read, and manage notifications per user."
     author      = "SaaS Factory"
     dependencies: list[str] = []
 
-    api_prefix  = "/form-builder"
-    permissions = ["form_builder.read", "form_builder.write"]
-    admin_menu  = [{"label": "Form Builder", "icon": "layout", "route": "/admin/form-builder"}]
+    api_prefix  = "/notifications"
+    permissions = ["notifications.read", "notifications.write"]
+    admin_menu  = [{"label": "Notifications", "icon": "bell", "route": "/admin/notifications"}]
 
     def default_config(self) -> dict:
-        return {"max_forms_per_tenant": 50, "max_submissions_per_form": 10000}
+        return {"max_unread": 100}
 
     def on_install(self) -> None:
         from . import models  # noqa: F401

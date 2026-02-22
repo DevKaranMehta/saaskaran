@@ -1,0 +1,26 @@
+{
+  "label": "Audit Log",
+  "icon": "📋",
+  "color": "#6b7280",
+  "description": "Full audit trail of every action in your workspace.",
+  "api_base": "/audit-log",
+  "resources": [
+    {
+      "key": "entries",
+      "label": "Audit Entries",
+      "list":   "GET /",
+      "create": null,
+      "update": null,
+      "delete": null,
+      "id_field": "id",
+      "empty_message": "No audit entries yet.",
+      "fields": [
+        {"key": "action",        "label": "Action",        "type": "text", "required": false, "show_in_list": true},
+        {"key": "resource_type", "label": "Resource",      "type": "text", "required": false, "show_in_list": true},
+        {"key": "resource_id",   "label": "Resource ID",   "type": "text", "required": false, "show_in_list": true},
+        {"key": "user_id",       "label": "User ID",       "type": "text", "required": false, "show_in_list": false},
+        {"key": "created_at",    "label": "When",          "type": "text", "required": false, "show_in_list": true}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "label": "Settings",
+  "icon": "⚙️",
+  "color": "#64748b",
+  "description": "Workspace settings and configuration key-value pairs.",
+  "api_base": "/settings",
+  "resources": [
+    {
+      "key": "entries",
+      "label": "Settings",
+      "list":   "GET /",
+      "create": "PUT /{key}",
+      "update": "PUT /{key}",
+      "delete": "DELETE /{key}",
+      "id_field": "key",
+      "empty_message": "No settings configured yet.",
+      "fields": [
+        {"key": "key",   "label": "Key",   "type": "text", "required": true,  "show_in_list": true},
+        {"key": "value", "label": "Value", "type": "text", "required": false, "show_in_list": true}
+      ]
+    }
+  ]
+}

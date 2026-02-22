@@ -1,0 +1,25 @@
+{
+  "label": "Notifications",
+  "icon": "🔔",
+  "color": "#f97316",
+  "description": "In-app notifications — send and manage alerts for your team.",
+  "api_base": "/notifications",
+  "resources": [
+    {
+      "key": "notifications",
+      "label": "Notifications",
+      "list":   "GET /",
+      "create": "POST /",
+      "update": null,
+      "delete": null,
+      "id_field": "id",
+      "empty_message": "No notifications yet.",
+      "fields": [
+        {"key": "title",   "label": "Title",   "type": "text",     "required": true,  "show_in_list": true},
+        {"key": "message", "label": "Message", "type": "textarea", "required": false, "show_in_list": true},
+        {"key": "link",    "label": "Link",    "type": "text",     "required": false, "show_in_list": false},
+        {"key": "is_read", "label": "Read",    "type": "checkbox", "required": false, "show_in_list": true}
+      ]
+    }
+  ]
+}

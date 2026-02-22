@@ -1,21 +1,21 @@
-"""Form Builder Extension."""
+"""Marketplace Extension — browse and share extensions."""
 from __future__ import annotations
 from saas_builder.core import ExtensionBase
 
 
-class FormBuilderExtension(ExtensionBase):
-    name        = "form_builder"
+class MarketplaceExtension(ExtensionBase):
+    name        = "marketplace"
     version     = "1.0.0"
-    description = "Build embeddable forms, generate embed code, and track submissions."
+    description = "Browse, install, and publish extensions to the SaaS Factory marketplace."
     author      = "SaaS Factory"
     dependencies: list[str] = []
 
-    api_prefix  = "/form-builder"
-    permissions = ["form_builder.read", "form_builder.write"]
-    admin_menu  = [{"label": "Form Builder", "icon": "layout", "route": "/admin/form-builder"}]
+    api_prefix  = "/marketplace"
+    permissions = ["marketplace.read", "marketplace.publish"]
+    admin_menu  = [{"label": "Marketplace", "icon": "store", "route": "/admin/marketplace"}]
 
     def default_config(self) -> dict:
-        return {"max_forms_per_tenant": 50, "max_submissions_per_form": 10000}
+        return {"allow_publish": True}
 
     def on_install(self) -> None:
         from . import models  # noqa: F401

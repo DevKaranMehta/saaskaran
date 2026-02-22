@@ -1,0 +1,24 @@
+{
+  "label": "Roles",
+  "icon": "👥",
+  "color": "#8b5cf6",
+  "description": "Role-based access control — create roles and assign permissions.",
+  "api_base": "/roles",
+  "resources": [
+    {
+      "key": "roles",
+      "label": "Roles",
+      "list":   "GET /",
+      "create": "POST /",
+      "update": "PATCH /{id}",
+      "delete": "DELETE /{id}",
+      "id_field": "id",
+      "empty_message": "No roles yet. Create your first role!",
+      "fields": [
+        {"key": "name",        "label": "Role Name",    "type": "text",     "required": true,  "show_in_list": true},
+        {"key": "description", "label": "Description",  "type": "textarea", "required": false, "show_in_list": false},
+        {"key": "is_default",  "label": "Default Role", "type": "checkbox", "required": false, "show_in_list": true}
+      ]
+    }
+  ]
+}

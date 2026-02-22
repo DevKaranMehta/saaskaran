@@ -1,0 +1,26 @@
+{
+  "label": "Marketplace",
+  "icon": "🏪",
+  "color": "#06b6d4",
+  "description": "Browse and publish extensions in the SaaS Factory marketplace.",
+  "api_base": "/marketplace",
+  "resources": [
+    {
+      "key": "listings",
+      "label": "Listings",
+      "list":   "GET /listings",
+      "create": "POST /listings",
+      "update": null,
+      "delete": null,
+      "id_field": "id",
+      "empty_message": "No marketplace listings yet. Publish your first extension!",
+      "fields": [
+        {"key": "display_name", "label": "Extension Name", "type": "text",     "required": true,  "show_in_list": true},
+        {"key": "author",       "label": "Author",         "type": "text",     "required": true,  "show_in_list": true},
+        {"key": "version",      "label": "Version",        "type": "text",     "required": false, "show_in_list": true},
+        {"key": "price",        "label": "Price (USD)",    "type": "number",   "required": false, "show_in_list": true},
+        {"key": "description",  "label": "Description",    "type": "textarea", "required": false, "show_in_list": false}
+      ]
+    }
+  ]
+}

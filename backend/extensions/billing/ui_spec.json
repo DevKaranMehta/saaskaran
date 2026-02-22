@@ -1,0 +1,26 @@
+{
+  "label": "Billing",
+  "icon": "💳",
+  "color": "#f59e0b",
+  "description": "Subscription plans and billing management.",
+  "api_base": "/billing",
+  "resources": [
+    {
+      "key": "plans",
+      "label": "Plans",
+      "list":   "GET /plans",
+      "create": "POST /plans",
+      "update": "PATCH /plans/{id}",
+      "delete": "DELETE /plans/{id}",
+      "id_field": "id",
+      "empty_message": "No billing plans yet. Create your first plan!",
+      "fields": [
+        {"key": "name",        "label": "Plan Name",    "type": "text",     "required": true,  "show_in_list": true},
+        {"key": "price",       "label": "Price",        "type": "number",   "required": true,  "show_in_list": true},
+        {"key": "currency",    "label": "Currency",     "type": "text",     "required": false, "show_in_list": true, "placeholder": "USD"},
+        {"key": "interval",    "label": "Billing Cycle","type": "select",   "required": false, "show_in_list": true, "options": ["month", "year"]},
+        {"key": "description", "label": "Description",  "type": "textarea", "required": false, "show_in_list": false}
+      ]
+    }
+  ]
+}

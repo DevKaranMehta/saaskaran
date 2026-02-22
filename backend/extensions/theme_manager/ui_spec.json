@@ -1,0 +1,8 @@
+{
+  "label": "Theme Manager",
+  "icon": "🎨",
+  "color": "#ec4899",
+  "description": "Customize your workspace theme, colors, and branding.",
+  "api_base": "/themes",
+  "resources": []
+}

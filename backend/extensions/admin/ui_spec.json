@@ -1,0 +1,8 @@
+{
+  "label": "Admin",
+  "icon": "🛡️",
+  "color": "#6366f1",
+  "description": "Workspace admin panel — users, stats, and extension management.",
+  "api_base": "/admin",
+  "resources": []
+}

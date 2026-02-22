@@ -1,21 +1,21 @@
-"""Form Builder Extension."""
+"""Audit Log Extension — track all workspace actions."""
 from __future__ import annotations
 from saas_builder.core import ExtensionBase
 
 
-class FormBuilderExtension(ExtensionBase):
-    name        = "form_builder"
+class AuditLogExtension(ExtensionBase):
+    name        = "audit_log"
     version     = "1.0.0"
-    description = "Build embeddable forms, generate embed code, and track submissions."
+    description = "Full audit trail: log every action, resource change, and user event in your workspace."
     author      = "SaaS Factory"
     dependencies: list[str] = []
 
-    api_prefix  = "/form-builder"
-    permissions = ["form_builder.read", "form_builder.write"]
-    admin_menu  = [{"label": "Form Builder", "icon": "layout", "route": "/admin/form-builder"}]
+    api_prefix  = "/audit-log"
+    permissions = ["audit_log.read", "audit_log.write"]
+    admin_menu  = [{"label": "Audit Log", "icon": "activity", "route": "/admin/audit-log"}]
 
     def default_config(self) -> dict:
-        return {"max_forms_per_tenant": 50, "max_submissions_per_form": 10000}
+        return {"retention_days": 90}
 
     def on_install(self) -> None:
         from . import models  # noqa: F401

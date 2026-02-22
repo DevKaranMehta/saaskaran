@@ -1,21 +1,21 @@
-"""Form Builder Extension."""
+"""Theme Manager Extension — workspace theme customization."""
 from __future__ import annotations
 from saas_builder.core import ExtensionBase
 
 
-class FormBuilderExtension(ExtensionBase):
-    name        = "form_builder"
+class ThemeManagerExtension(ExtensionBase):
+    name        = "theme_manager"
     version     = "1.0.0"
-    description = "Build embeddable forms, generate embed code, and track submissions."
+    description = "Customize your workspace theme: colors, fonts, logo, and dark/light mode."
     author      = "SaaS Factory"
     dependencies: list[str] = []
 
-    api_prefix  = "/form-builder"
-    permissions = ["form_builder.read", "form_builder.write"]
-    admin_menu  = [{"label": "Form Builder", "icon": "layout", "route": "/admin/form-builder"}]
+    api_prefix  = "/themes"
+    permissions = ["themes.read", "themes.write"]
+    admin_menu  = [{"label": "Themes", "icon": "palette", "route": "/admin/themes"}]
 
     def default_config(self) -> dict:
-        return {"max_forms_per_tenant": 50, "max_submissions_per_form": 10000}
+        return {"default_theme": "dark", "allow_custom_css": False}
 
     def on_install(self) -> None:
         from . import models  # noqa: F401
