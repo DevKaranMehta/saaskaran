@@ -14,7 +14,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth import create_access_token, get_current_user, hash_password, verify_password
 from ..database import get_db
-from ..models import Tenant, User
+from ..models import Tenant, TenantExtension, User
+
+# Extensions that are platform infrastructure, not user-facing features
+_PLATFORM_EXTENSIONS = frozenset({
+    "admin", "settings", "roles", "billing", "notifications",
+    "audit_log", "marketplace", "theme_manager", "auth", "ai_generator",
+})
 
 logger = logging.getLogger(__name__)
 
@@ -196,3 +202,34 @@ async def workspace_info(slug: str, db: Annotated[AsyncSession, Depends(get_db)]
     if not tenant:
         raise HTTPException(status_code=404, detail="Workspace not found")
     return {"name": tenant.name, "slug": tenant.slug, "exists": True}
+
+
+@router.get("/preview/{slug}")
+async def workspace_preview(slug: str, db: Annotated[AsyncSession, Depends(get_db)]):
+    """Public endpoint — returns workspace info + active user-facing extensions for the preview page."""
+    result = await db.execute(select(Tenant).where(Tenant.slug == slug, Tenant.is_active == True))
+    tenant = result.scalar_one_or_none()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    ext_result = await db.execute(
+        select(TenantExtension).where(
+            TenantExtension.tenant_id == tenant.id,
+            TenantExtension.is_active == True,
+        )
+    )
+    all_exts = ext_result.scalars().all()
+    user_exts = [e for e in all_exts if e.extension_name not in _PLATFORM_EXTENSIONS]
+
+    return {
+        "name": tenant.name,
+        "slug": tenant.slug,
+        "plan": tenant.plan,
+        "subdomain": f"https://{slug}.factory.supportbox.cloud",
+        "extension_count": len(user_exts),
+        "extensions": [
+            {"name": e.extension_name, "label": e.extension_name.replace("_", " ").title()}
+            for e in user_exts
+        ],
+        "created_at": tenant.created_at.isoformat(),
+    }
