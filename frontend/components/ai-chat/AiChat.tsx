@@ -5,6 +5,10 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import CodeBlock from './CodeBlock'
 
+// ── Build stage ──────────────────────────────────────────────────
+
+type BuildStage = 'idle' | 'generating' | 'validating' | 'installing' | 'done' | 'error'
+
 // ── Message types ────────────────────────────────────────────────
 
 interface TextMessage {
@@ -98,7 +102,119 @@ function getWsUrl() {
 
 // ── Sub-components ───────────────────────────────────────────────
 
+function InstallSuccessCard({ name }: { name: string }) {
+  return (
+    <div className="my-3 mx-1 rounded-xl border border-green-500/40 bg-green-950/30 px-4 py-4">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-green-600/20 border border-green-500/40 flex items-center justify-center text-xl flex-shrink-0">
+          🎉
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-green-300">Extension installed!</p>
+          <p className="text-xs text-green-400/70 font-mono mt-0.5 truncate">{name}</p>
+        </div>
+        <a
+          href="/extensions"
+          className="flex-shrink-0 px-3 py-1.5 text-xs font-medium bg-green-600/20 hover:bg-green-600/40 border border-green-500/40 text-green-300 rounded-lg transition whitespace-nowrap"
+        >
+          Go to Extensions →
+        </a>
+      </div>
+    </div>
+  )
+}
+
+const BUILD_STAGES = [
+  { id: 'generating', label: 'Generating' },
+  { id: 'validating', label: 'Validating' },
+  { id: 'installing', label: 'Installing' },
+  { id: 'done',       label: 'Done' },
+] as const
+
+function BuildProgressBar({ stage }: { stage: BuildStage }) {
+  if (stage === 'idle') return null
+
+  const activeId = stage === 'error' ? 'validating' : stage
+  const activeIndex = BUILD_STAGES.findIndex(s => s.id === activeId)
+
+  return (
+    <div className="mx-4 mb-2 rounded-xl border border-slate-700/60 bg-slate-900/60 px-5 py-3">
+      <div className="flex items-center">
+        {BUILD_STAGES.map((s, i) => {
+          const isActive = s.id === activeId && stage !== 'done'
+          const isComplete = stage === 'done' || i < activeIndex
+          const isError = stage === 'error' && s.id === 'validating'
+          return (
+            <div key={s.id} className="flex items-center flex-1 last:flex-none">
+              <div className="flex flex-col items-center gap-1">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  isError    ? 'bg-red-600/30 border border-red-500 text-red-400' :
+                  isComplete ? 'bg-green-600/30 border border-green-500 text-green-400' :
+                  isActive   ? 'bg-indigo-600/40 border border-indigo-500 text-indigo-300 animate-pulse' :
+                               'bg-slate-800 border border-slate-700 text-slate-600'
+                }`}>
+                  {isError ? '✕' : isComplete ? '✓' : i + 1}
+                </div>
+                <span className={`text-[10px] font-medium leading-none ${
+                  isError    ? 'text-red-400' :
+                  isComplete ? 'text-green-400' :
+                  isActive   ? 'text-indigo-300' :
+                               'text-slate-600'
+                }`}>{s.label}</span>
+              </div>
+              {i < BUILD_STAGES.length - 1 && (
+                <div className={`flex-1 h-px mx-2 -mt-4 ${i < activeIndex ? 'bg-green-600/50' : 'bg-slate-700'}`} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function StatusLine({ content }: { content: string }) {
+  // Install success card
+  const registeredMatch = content.match(/Extension '([^']+)' registered/)
+  if (registeredMatch) {
+    return <InstallSuccessCard name={registeredMatch[1]} />
+  }
+
+  // Validation error panel
+  if (content.startsWith('❌')) {
+    return (
+      <div className="my-1 mx-1 rounded-lg border border-red-500/40 bg-red-950/30 px-4 py-3">
+        <div className="flex items-start gap-2">
+          <span className="text-red-400 flex-shrink-0 text-sm">❌</span>
+          <p className="text-xs text-red-300 font-mono leading-relaxed">{content.slice(content.startsWith('❌ ') ? 3 : 2).trim()}</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Warning panel
+  if (content.startsWith('⚠️')) {
+    return (
+      <div className="my-1 mx-1 rounded-lg border border-amber-500/30 bg-amber-950/20 px-4 py-2">
+        <div className="flex items-start gap-2">
+          <span className="text-amber-400 flex-shrink-0 text-sm">⚠️</span>
+          <p className="text-xs text-amber-300/80 font-mono leading-relaxed">{content.slice(2).trim()}</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Validation passed — subtle green
+  if (content.startsWith('✅') && content.toLowerCase().includes('validat')) {
+    return (
+      <div className="flex items-center gap-2 py-1 px-3 text-xs text-green-500/70 font-mono">
+        <span className="w-1 h-1 rounded-full bg-green-600 flex-shrink-0" />
+        {content}
+      </div>
+    )
+  }
+
+  // Regular status line
   return (
     <div className="flex items-center gap-2 py-1 px-3 text-xs text-slate-500 font-mono">
       <span className="w-1 h-1 rounded-full bg-slate-600 flex-shrink-0" />
@@ -204,6 +320,8 @@ export default function AiChat({ onExtensionInstalled }: AiChatProps) {
   const [input, setInput] = useState('')
   const [isConnected, setIsConnected] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [buildStage, setBuildStage] = useState<BuildStage>('idle')
+  const [lastUserMessage, setLastUserMessage] = useState('')
   const [extensions, setExtensions] = useState<ExtensionInfo[]>([])
 
   // Pagination: show the last PAGE_SIZE messages; scroll to top loads more
@@ -360,7 +478,19 @@ export default function AiChat({ onExtensionInstalled }: AiChatProps) {
         ;(ws as WebSocket & { _resetTimeout?: () => void })._resetTimeout?.()
 
         if (data.type === 'status') {
-          setMessages(prev => [...prev, { role: 'status', content: data.content } as StatusMessage])
+          const content: string = data.content
+          // Drive the build stage progress bar
+          if (content.startsWith('❌')) {
+            setBuildStage('error')
+          } else if (content.includes('registered')) {
+            setBuildStage('done')
+            setTimeout(() => setBuildStage('idle'), 8000)
+          } else if (content.toLowerCase().includes('writing') || content.toLowerCase().includes('install') || content.toLowerCase().includes('reload')) {
+            setBuildStage('installing')
+          } else if (content.toLowerCase().includes('validat') || content.startsWith('⚠️') || content.startsWith('✅')) {
+            setBuildStage(prev => prev === 'error' ? 'error' : 'validating')
+          }
+          setMessages(prev => [...prev, { role: 'status', content } as StatusMessage])
 
         } else if (data.type === 'thinking') {
           setMessages(prev => [...prev, { role: 'thinking', content: data.content } as ThinkingMessage])
@@ -403,10 +533,12 @@ export default function AiChat({ onExtensionInstalled }: AiChatProps) {
             return prev
           })
           setIsGenerating(false)
+          setBuildStage(prev => (prev === 'idle' || prev === 'generating') ? 'idle' : prev)
 
         } else if (data.type === 'cancelled') {
           if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null }
           setIsGenerating(false)
+          setBuildStage('idle')
 
         } else if (data.type === 'error') {
           if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null }
@@ -415,6 +547,7 @@ export default function AiChat({ onExtensionInstalled }: AiChatProps) {
             { role: 'assistant', content: `❌ ${data.message}` } as TextMessage,
           ])
           setIsGenerating(false)
+          setBuildStage('error')
         }
       }
 
@@ -438,6 +571,8 @@ export default function AiChat({ onExtensionInstalled }: AiChatProps) {
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setIsGenerating(true)
+    setBuildStage('generating')
+    setLastUserMessage(text)
 
     // Inactivity timeout: reset on every server message, fires if silent for 3 min
     const resetInactivityTimeout = () => {
@@ -511,6 +646,9 @@ export default function AiChat({ onExtensionInstalled }: AiChatProps) {
           </button>
         </div>
       </div>
+
+      {/* Build progress bar — shown when generating or after completion */}
+      {buildStage !== 'idle' && <BuildProgressBar stage={buildStage} />}
 
       {/* Messages */}
       <div
@@ -601,15 +739,30 @@ export default function AiChat({ onExtensionInstalled }: AiChatProps) {
 
       {/* Input area */}
       <div className="border-t border-slate-800">
-        {/* Generating bar */}
-        {isGenerating && (
+        {/* Generating bar / error retry bar */}
+        {(isGenerating || buildStage === 'error') && (
           <div className="px-4 pt-2 pb-1 flex items-center gap-2">
-            <div className="flex gap-1 flex-shrink-0">
-              {[0, 150, 300].map(d => (
-                <div key={d} className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: `${d}ms` }} />
-              ))}
-            </div>
-            <span className="text-xs text-slate-500">AI is responding… send a new message to interrupt</span>
+            {buildStage === 'error' ? (
+              <>
+                <span className="text-xs text-red-400/80">Generation stopped due to validation errors.</span>
+                <button
+                  onClick={() => { setBuildStage('idle'); send(lastUserMessage) }}
+                  disabled={!lastUserMessage || !isConnected}
+                  className="ml-auto flex-shrink-0 text-xs px-3 py-1 rounded-lg bg-red-600/20 border border-red-500/40 text-red-300 hover:bg-red-600/40 transition disabled:opacity-40"
+                >
+                  ↺ Retry
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex gap-1 flex-shrink-0">
+                  {[0, 150, 300].map(d => (
+                    <div key={d} className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                  ))}
+                </div>
+                <span className="text-xs text-slate-500">AI is responding… send a new message to interrupt</span>
+              </>
+            )}
           </div>
         )}
 
