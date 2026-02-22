@@ -23,14 +23,15 @@ logger = logging.getLogger(__name__)
 
 
 # ── Templates shipped with platform ─────────────────────────────
+# Extensions listed here must correspond to folders in /backend/extensions/
 TEMPLATES: dict[str, dict] = {
-    "blank":      {"name": "Blank",      "emoji": "✨", "extensions": ["auth", "admin", "settings"]},
-    "lms":        {"name": "LMS",        "emoji": "📚", "extensions": ["auth", "admin", "courses", "students", "quizzes", "certificates", "payments"]},
-    "crm":        {"name": "CRM",        "emoji": "📊", "extensions": ["auth", "admin", "contacts", "deals", "pipeline", "email_templates", "reports"]},
-    "helpdesk":   {"name": "Helpdesk",   "emoji": "🎧", "extensions": ["auth", "admin", "tickets", "agents", "knowledge_base", "live_chat"]},
-    "ecommerce":  {"name": "E-commerce", "emoji": "🛒", "extensions": ["auth", "admin", "products", "orders", "payments", "inventory", "shipping"]},
-    "hr":         {"name": "HR System",  "emoji": "👥", "extensions": ["auth", "admin", "employees", "leave", "payroll", "recruitment", "onboarding"]},
-    "saas":       {"name": "SaaS Starter","emoji": "🚀", "extensions": ["auth", "admin", "billing", "tenants", "onboarding", "analytics"]},
+    "blank":     {"name": "Blank",       "emoji": "✨", "extensions": ["admin", "settings", "roles"]},
+    "lms":       {"name": "LMS",         "emoji": "📚", "extensions": ["admin", "settings", "roles", "billing", "blog_cms", "notifications", "audit_log"]},
+    "crm":       {"name": "CRM",         "emoji": "📊", "extensions": ["admin", "settings", "roles", "billing", "invoicing", "kanban_board", "notifications", "audit_log"]},
+    "helpdesk":  {"name": "Helpdesk",    "emoji": "🎧", "extensions": ["admin", "settings", "roles", "live_chat", "form_builder", "notifications", "customer_portal", "audit_log"]},
+    "ecommerce": {"name": "E-commerce",  "emoji": "🛒", "extensions": ["admin", "settings", "roles", "billing", "invoicing", "notifications", "customer_portal", "audit_log"]},
+    "hr":        {"name": "HR System",   "emoji": "👥", "extensions": ["admin", "settings", "roles", "form_builder", "notifications", "audit_log"]},
+    "saas":      {"name": "SaaS Starter","emoji": "🚀", "extensions": ["admin", "settings", "roles", "billing", "marketplace", "notifications", "customer_portal", "audit_log"]},
 }
 
 

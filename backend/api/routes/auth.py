@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Annotated
+from typing import Annotated, Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,6 +50,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     tenant_name: str
+    template_id: Optional[str] = None
 
 
 class LoginRequest(BaseModel):
@@ -63,8 +64,40 @@ class TokenResponse(BaseModel):
     user: dict
 
 
+async def _activate_template_extensions(
+    tenant_id: str,
+    template_id: str,
+    request: Request,
+    db: AsyncSession,
+) -> list[str]:
+    """Install and activate all available extensions for the given template."""
+    templates = getattr(request.app.state, "templates", {})
+    template = templates.get(template_id)
+    if not template:
+        return []
+
+    manager = request.app.state.ext_manager
+    registry = request.app.state.ext_registry
+    registered_names = registry.names()
+
+    activated: list[str] = []
+    for ext_name in template.get("extensions", []):
+        if ext_name not in registered_names:
+            logger.debug("Template extension '%s' not registered, skipping", ext_name)
+            continue
+        try:
+            await manager.install(ext_name, tenant_id, db)
+            await manager.activate(ext_name, tenant_id, db)
+            activated.append(ext_name)
+            logger.info("Auto-activated extension '%s' for tenant %s", ext_name, tenant_id)
+        except Exception as exc:
+            logger.warning("Could not activate extension '%s' for tenant %s: %s", ext_name, tenant_id, exc)
+
+    return activated
+
+
 @router.post("/register", response_model=TokenResponse, status_code=201)
-async def register(body: RegisterRequest, db: Annotated[AsyncSession, Depends(get_db)]):
+async def register(body: RegisterRequest, request: Request, db: Annotated[AsyncSession, Depends(get_db)]):
     # Check email not taken
     existing = await db.execute(select(User).where(User.email == body.email))
     if existing.scalar_one_or_none():
@@ -90,6 +123,11 @@ async def register(body: RegisterRequest, db: Annotated[AsyncSession, Depends(ge
 
     token = create_access_token(user.id, tenant.id, user.role)
 
+    # Auto-activate template extensions (blocking — must happen before response so dashboard loads correctly)
+    activated: list[str] = []
+    if body.template_id:
+        activated = await _activate_template_extensions(tenant.id, body.template_id, request, db)
+
     # Register subdomain in background — non-blocking, non-fatal
     asyncio.create_task(_register_subdomain(tenant.id, slug))
 
@@ -101,6 +139,8 @@ async def register(body: RegisterRequest, db: Annotated[AsyncSession, Depends(ge
             "email": user.email,
             "role": user.role,
             "subdomain": f"https://{slug}.factory.supportbox.cloud",
+            "template_id": body.template_id,
+            "activated_extensions": activated,
         },
     )
 

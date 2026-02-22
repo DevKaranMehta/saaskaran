@@ -1,19 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const MAIN_DOMAIN = 'factory.supportbox.cloud'
 const COOKIE_NAME = 'sf_token'
+
+const TEMPLATE_LABELS: Record<string, { name: string; emoji: string }> = {
+  blank:     { name: 'Blank',        emoji: '✨' },
+  lms:       { name: 'LMS',          emoji: '📚' },
+  crm:       { name: 'CRM',          emoji: '📊' },
+  helpdesk:  { name: 'Helpdesk',     emoji: '🎧' },
+  ecommerce: { name: 'E-commerce',   emoji: '🛒' },
+  hr:        { name: 'HR System',    emoji: '👥' },
+  saas:      { name: 'SaaS Starter', emoji: '🚀' },
+}
 
 function setAuthCookie(token: string) {
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toUTCString()
   document.cookie = `${COOKIE_NAME}=${token}; domain=.${MAIN_DOMAIN}; path=/; expires=${expires}; SameSite=Lax`
 }
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const templateId = searchParams.get('template') || 'blank'
+  const template = TEMPLATE_LABELS[templateId] ?? TEMPLATE_LABELS.blank
+
   const [form, setForm] = useState({
     email: '',
     password: '',
@@ -32,14 +46,16 @@ export default function RegisterPage() {
       const res = await fetch('/api/v1/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, template_id: templateId }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Registration failed')
 
       localStorage.setItem('token', data.access_token)
       setAuthCookie(data.access_token)
-      router.push('/dashboard')
+
+      // Redirect to dashboard with welcome flag so it can show onboarding
+      router.push(`/dashboard?welcome=1&template=${templateId}`)
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -61,6 +77,23 @@ export default function RegisterPage() {
           <h1 className="text-2xl font-bold text-white">Create your workspace</h1>
           <p className="text-slate-400 text-sm mt-1">Start building your SaaS for free</p>
         </div>
+
+        {/* Template badge */}
+        {templateId && templateId !== 'blank' && (
+          <div className="flex items-center gap-2 bg-indigo-950/60 border border-indigo-700/40 rounded-lg px-3 py-2 mb-4">
+            <span className="text-lg">{template.emoji}</span>
+            <div>
+              <p className="text-indigo-300 text-xs font-medium">Starting with template</p>
+              <p className="text-white text-sm font-semibold">{template.name}</p>
+            </div>
+            <Link
+              href="/register"
+              className="ml-auto text-slate-500 hover:text-slate-300 text-xs transition"
+            >
+              Change
+            </Link>
+          </div>
+        )}
 
         <form onSubmit={submit} className="space-y-4">
           {error && (
@@ -123,7 +156,7 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-50"
           >
-            {loading ? 'Creating workspace...' : 'Create free workspace'}
+            {loading ? 'Setting up your workspace...' : `Create workspace ${template.emoji}`}
           </button>
         </form>
 
@@ -135,5 +168,17 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-400">Loading...</div>
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
   )
 }
