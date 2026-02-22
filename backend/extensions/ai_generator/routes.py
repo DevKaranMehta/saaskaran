@@ -166,9 +166,11 @@ async def _stream_via_sdk(websocket: WebSocket, messages: list[dict], system_pro
 
             final_response = full_response
 
-            # Write any [WRITE_FILE:] blocks found in this turn
+            # Validate + write any [WRITE_FILE:] blocks found in this turn
             if "[WRITE_FILE:" in full_response:
-                written = await _write_extension_files(full_response)
+                written, val_errors = await _validate_and_write_files(websocket, full_response)
+                if val_errors:
+                    break  # Stop on validation failure
                 all_written_files.extend(written)
                 if written:
                     reload_result = await _hot_reload()
@@ -465,8 +467,8 @@ async def _run_one_turn(
             if stderr:
                 await websocket.send_json({"type": "error", "message": stderr[:300]})
 
-        files_written = await _write_extension_files(full_response)
-        return full_response, files_written
+        # Caller is responsible for validation + writing
+        return full_response, []
 
     except asyncio.CancelledError:
         try:
@@ -501,28 +503,34 @@ async def _stream_via_cli(websocket: WebSocket, messages: list[dict], system_pro
     final_response = ""
 
     for turn in range(4):
-        turn_response, turn_files = await _run_one_turn(websocket, current_messages, system_prompt, turn)
+        turn_response, _ = await _run_one_turn(websocket, current_messages, system_prompt, turn)
         final_response = turn_response
-        all_written_files.extend(turn_files)
 
-        # Show each written file as a tool_use block
+        # Show each written file as a tool_use block (before validation)
         await _emit_turn_response(websocket, turn_response)
 
-        # Hot-reload backend when extension files written
-        backend_files = [f for f in turn_files if not f.startswith("frontend/")]
-        frontend_files = [f for f in turn_files if f.startswith("frontend/")]
+        # Validate + write (validation runs before anything hits disk)
+        if "[WRITE_FILE:" in turn_response:
+            turn_files, validation_errors = await _validate_and_write_files(websocket, turn_response)
+            if validation_errors:
+                # Validation failed — stop generation, let user fix via follow-up message
+                break
+            all_written_files.extend(turn_files)
 
-        if backend_files:
-            reload_result = await _hot_reload()
-            new_exts = reload_result.get("new_extensions", [])
-            if new_exts:
-                await websocket.send_json({"type": "status", "content": f"✅ Extension '{new_exts[0]}' registered!"})
+            backend_files  = [f for f in turn_files if not f.startswith("frontend/")]
+            frontend_files = [f for f in turn_files if f.startswith("frontend/")]
 
-        if frontend_files:
-            await websocket.send_json({"type": "status", "content": "🔨 Building frontend..."})
-            build_ok = await _npm_build(websocket)
-            if build_ok:
-                await websocket.send_json({"type": "status", "content": "✅ Frontend built & deployed!"})
+            if backend_files:
+                reload_result = await _hot_reload()
+                new_exts = reload_result.get("new_extensions", [])
+                if new_exts:
+                    await websocket.send_json({"type": "status", "content": f"✅ Extension '{new_exts[0]}' registered!"})
+
+            if frontend_files:
+                await websocket.send_json({"type": "status", "content": "🔨 Building frontend..."})
+                build_ok = await _npm_build(websocket)
+                if build_ok:
+                    await websocket.send_json({"type": "status", "content": "✅ Frontend built & deployed!"})
 
         is_complete = "✅" in turn_response or not turn_response.strip()
         if is_complete or turn == 3:
@@ -542,40 +550,138 @@ async def _stream_via_cli(websocket: WebSocket, messages: list[dict], system_pro
     })
 
 
-async def _write_extension_files(full_response: str) -> list[str]:
-    """Parse [WRITE_FILE: path] blocks and write to disk.
-
-    Paths can be:
-      extensions/my_ext/models.py     → writes to backend/extensions/my_ext/models.py
-      frontend/components/...         → writes to saaskaran/frontend/components/...
-      backend/extensions/...          → writes to saaskaran/backend/extensions/...
-
-    Returns list of written relative paths (prefixed with 'frontend/' or 'backend/').
-    """
-    written: list[str] = []
-    saas_root = Path(SAAS_ROOT)
-    backend   = Path(BACKEND_DIR)
-
+def _parse_file_blocks(full_response: str) -> dict[str, str]:
+    """Extract {rel_path: content} from all [WRITE_FILE:] blocks in the response."""
+    files: dict[str, str] = {}
     for match in _WRITE_FILE_RE.finditer(full_response):
         rel_path = match.group(1).strip()
         content  = match.group(2)
         if content.startswith("\n"):
             content = content[1:]
+        files[rel_path] = content
+    return files
 
-        # Determine absolute path based on prefix
-        if rel_path.startswith("frontend/"):
-            abs_path = saas_root / rel_path
-        elif rel_path.startswith("backend/"):
-            abs_path = saas_root / rel_path
-        else:
-            # Legacy: assume it's relative to backend/
-            abs_path = backend / rel_path
 
+def _resolve_abs_path(rel_path: str) -> Path:
+    saas_root = Path(SAAS_ROOT)
+    backend   = Path(BACKEND_DIR)
+    if rel_path.startswith("frontend/") or rel_path.startswith("backend/"):
+        return saas_root / rel_path
+    return backend / rel_path  # legacy: extensions/name/file.py
+
+
+def _backup_extension(ext_name: str) -> dict[str, bytes] | None:
+    """Snapshot all files in an existing extension dir. Returns None if dir doesn't exist."""
+    ext_dir = Path(BACKEND_DIR) / "extensions" / ext_name
+    if not ext_dir.exists():
+        return None
+    snapshot: dict[str, bytes] = {}
+    for f in ext_dir.rglob("*"):
+        if f.is_file() and "__pycache__" not in str(f):
+            snapshot[str(f.relative_to(ext_dir))] = f.read_bytes()
+    return snapshot
+
+
+def _restore_extension(ext_name: str, snapshot: dict[str, bytes]) -> None:
+    """Restore a previously snapshotted extension directory."""
+    ext_dir = Path(BACKEND_DIR) / "extensions" / ext_name
+    try:
+        import shutil as _shutil
+        if ext_dir.exists():
+            _shutil.rmtree(ext_dir)
+        ext_dir.mkdir(parents=True)
+        for rel, data in snapshot.items():
+            target = ext_dir / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+        logger.info("Rolled back extension '%s' to previous state", ext_name)
+    except Exception as exc:
+        logger.error("Rollback failed for '%s': %s", ext_name, exc)
+
+
+async def _validate_and_write_files(
+    websocket: WebSocket,
+    full_response: str,
+) -> tuple[list[str], list[str]]:
+    """Parse → validate → write extension files.
+
+    Validation runs BEFORE any file is written to disk:
+      1. Python syntax check (ast.parse)
+      2. Security scan (no eval/exec, no f-string SQL)
+      3. models.py: ext_ prefix, tenant_id present
+      4. routes.py: tenant_id filter in queries
+      5. extension.py: ExtensionBase inheritance
+
+    If validation fails → errors reported to frontend, nothing written.
+    If an existing extension is being overwritten → snapshot first, restore on hot-reload failure.
+
+    Returns:
+        (written_files, error_messages)
+    """
+    from .validator import validate_files
+
+    files = _parse_file_blocks(full_response)
+    if not files:
+        return [], []
+
+    # ── 1. Validate ───────────────────────────────────────────────────────────
+    await websocket.send_json({"type": "status", "content": "🔍 Validating generated code..."})
+    result = validate_files(files)
+
+    for warning in result.warnings:
+        await websocket.send_json({"type": "status", "content": f"⚠️  {warning}"})
+
+    if not result.passed:
+        for error in result.errors:
+            await websocket.send_json({"type": "status", "content": f"❌ {error}"})
+        await websocket.send_json({
+            "type":    "error",
+            "message": (
+                f"Validation failed ({len(result.errors)} issue(s)). "
+                "No files written. Reply with the issues and ask Claude to fix them."
+            ),
+        })
+        return [], result.errors
+
+    await websocket.send_json({"type": "status", "content": "✅ Validation passed — writing files..."})
+
+    # ── 2. Snapshot existing extension dirs before overwriting ────────────────
+    snapshots: dict[str, dict[str, bytes]] = {}
+    for rel_path in files:
+        parts = rel_path.replace("backend/", "").split("/")
+        if len(parts) >= 2 and parts[0] == "extensions":
+            ext_name = parts[1]
+            if ext_name not in snapshots:
+                snap = _backup_extension(ext_name)
+                if snap is not None:
+                    snapshots[ext_name] = snap
+
+    # ── 3. Write files ────────────────────────────────────────────────────────
+    written: list[str] = []
+    for rel_path, content in files.items():
+        abs_path = _resolve_abs_path(rel_path)
         abs_path.parent.mkdir(parents=True, exist_ok=True)
         abs_path.write_text(content, encoding="utf-8")
         written.append(rel_path)
         logger.info("Wrote file: %s", abs_path)
 
+    return written, []
+
+
+async def _write_extension_files(full_response: str) -> list[str]:
+    """Legacy helper — used by SDK path which doesn't have per-file validation status.
+
+    Parses and writes [WRITE_FILE:] blocks without validation.
+    Prefer _validate_and_write_files() for new call sites.
+    """
+    files = _parse_file_blocks(full_response)
+    written: list[str] = []
+    for rel_path, content in files.items():
+        abs_path = _resolve_abs_path(rel_path)
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        abs_path.write_text(content, encoding="utf-8")
+        written.append(rel_path)
+        logger.info("Wrote file: %s", abs_path)
     return written
 
 

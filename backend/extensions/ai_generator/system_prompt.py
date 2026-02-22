@@ -676,6 +676,14 @@ from saas_builder.core import ExtensionBase
 ☑ `due_date` field on any entity that has deadlines (tasks, invoices, tickets)
 ☑ `assignee_name` or `assigned_to` on any entity that can be assigned
 ☑ Complete, working code — zero TODOs, zero placeholders
+
+### ⚠️ AUTOMATED VALIDATION — your code is checked before being written to disk:
+- Python syntax errors → file NOT written, generation stops
+- `eval()`, `exec()`, `compile()` in any file → blocked
+- Table names NOT starting with `ext_` → blocked
+- Missing `tenant_id` column in a model → blocked
+- F-string SQL queries (SQL injection risk) → blocked
+Write correct code the first time. The validator will catch any of these issues.
 '''
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -942,8 +950,11 @@ def build_system_prompt(
 """
 
     # ── CREATE MODE ──────────────────────────────────────────────────────────
+    codebase_context = _load_actual_codebase()
     return f"""{AGENTIC_PREAMBLE}You are a senior full-stack engineer building a complete, production-ready SaaS extension.
 {context}
+
+{codebase_context}
 
 ## REQUIRED FILES — output ALL of these, in order
 
